@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -68,9 +68,12 @@ jobs:
         echo "✅ Total Deletions: $total_deletions"
         echo "✅ Total Deletions: $branch_count"
         total_score=$(( (total_insertions + total_deletions) * branch_count ))
+
         echo "🎯 Total Divergence Score: $total_score"
         curl -s -X POST \
           -H "Authorization: token $GITHUB_TOKEN" \
           -H "Accept: application/vnd.github+json" \
           https://api.github.com/repos/${GITHUB_REPOSITORY}/commits/$newest_commit_sha/comments \
           -d "$(jq -n --arg body "Divergence: $total_score" '{ body: $body }')"
+
+        echo "**🧮 Divergence Score:** \`$total_score\`" >> $GITHUB_STEP_SUMMARY
