@@ -22,13 +22,29 @@ jobs:
         git fetch --all
 
         main_branch="origin/main"
+        total_insertions=0
+        total_deletions=0
 
         for branch in $(git for-each-ref --format='%(refname:short)' refs/remotes/origin/); do
           if [[ "$branch" != "$main_branch" && "$branch" != origin/HEAD ]]; then
-            echo ""
-            echo "🔍 Branch: $branch"
             base=$(git merge-base $main_branch $branch)
             stats=$(git diff --shortstat $base..$branch)
-            echo "🔀 Divergence: $stats"
+
+            echo "🔍 $branch — $stats"
+
+            insertions=$(echo "$stats" | grep -o '[0-9]* insertions' | grep -o '[0-9]*')
+            deletions=$(echo "$stats" | grep -o '[0-9]* deletions' | grep -o '[0-9]*')
+
+            insertions=${insertions:-0}
+            deletions=${deletions:-0}
+
+            total_insertions=$((total_insertions + insertions))
+            total_deletions=$((total_deletions + deletions))
           fi
         done
+
+        total_score=$((total_insertions + total_deletions))
+
+        echo "✅ Total Insertions: $total_insertions"
+        echo "✅ Total Deletions: $total_deletions"
+        echo "🎯 Total Divergence Score: $total_score"
