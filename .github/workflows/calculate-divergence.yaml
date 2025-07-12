@@ -38,8 +38,8 @@ jobs:
 
             echo "🔍 $branch — $stats"
 
-            insertions=$(echo "$stats" | grep -o '[0-9]* insertions' | grep -o '[0-9]*')
-            deletions=$(echo "$stats" | grep -o '[0-9]* deletions' | grep -o '[0-9]*')
+            insertions=$(echo "$stats" | grep -o '[0-9]\+ insertions' | grep -o '[0-9]\+' || echo "0")
+            deletions=$(echo "$stats" | grep -o '[0-9]\+ deletions' | grep -o '[0-9]\+' || echo "0")
 
             insertions=${insertions:-0}
             deletions=${deletions:-0}
