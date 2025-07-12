@@ -28,7 +28,6 @@ jobs:
         for branch in $(git branch -r | grep -v 'origin/HEAD' | grep -v 'origin/main'); do
           if [[ "$branch" != "$main_branch" && "$branch" != origin/HEAD ]]; then
             # Check if the branch has been fully merged into main
-            git merge-base --is-ancestor $branch $main_branch
             if git merge-base --is-ancestor $branch $main_branch; then
               echo "✅ $branch has already been merged into $main_branch — skipping."
               continue
