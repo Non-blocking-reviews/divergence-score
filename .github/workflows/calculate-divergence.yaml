@@ -9,12 +9,17 @@ on:
 jobs:
   divergence-score:
     runs-on: ubuntu-latest
-
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
         fetch-depth: 0  # Needed to access all commits and branches
+
+    - name: Install jq
+      run: sudo apt-get install -y jq
 
     - name: Calculate divergence score
       run: |
@@ -24,6 +29,7 @@ jobs:
         main_branch="origin/main"
         total_insertions=0
         total_deletions=0
+        branch_count=0
 
         for branch in $(git branch -r | grep -v 'origin/HEAD' | grep -v 'origin/main'); do
           if [[ "$branch" != "$main_branch" && "$branch" != origin/HEAD ]]; then
@@ -33,6 +39,15 @@ jobs:
               continue
             fi
 
+            latest_commit_sha=$(git rev-parse $branch)
+            latest_commit_date=$(git show -s --format=%ct $branch)
+
+            if [[ -z "$newest_commit_sha" || "$latest_commit_date" -gt "$newest_commit_unix" ]]; then
+              newest_commit_sha=$latest_commit_sha
+              newest_commit_unix=$latest_commit_date
+            fi
+
+            branch_count=$((branch_count + 1))  # ✅ Count this branch
             base=$(git merge-base $main_branch $branch)
             stats=$(git diff --shortstat $base..$branch)
 
@@ -49,8 +64,13 @@ jobs:
           fi
         done
 
-        total_score=$((total_insertions + total_deletions))
-
         echo "✅ Total Insertions: $total_insertions"
         echo "✅ Total Deletions: $total_deletions"
+        echo "✅ Total Deletions: $branch_count"
+        total_score=$(( (total_insertions + total_deletions) * branch_count ))
         echo "🎯 Total Divergence Score: $total_score"
+        curl -s -X POST \
+          -H "Authorization: token $GITHUB_TOKEN" \
+          -H "Accept: application/vnd.github+json" \
+          https://api.github.com/repos/${GITHUB_REPOSITORY}/commits/$newest_commit_sha/comments \
+          -d "$(jq -n --arg body "Divergence: $total_score" '{ body: $body }')"
