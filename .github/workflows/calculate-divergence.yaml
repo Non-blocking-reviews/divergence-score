@@ -27,6 +27,13 @@ jobs:
 
         for branch in $(git for-each-ref --format='%(refname:short)' refs/remotes/origin/); do
           if [[ "$branch" != "$main_branch" && "$branch" != origin/HEAD ]]; then
+            # Check if the branch has been fully merged into main
+            git merge-base --is-ancestor $branch $main_branch
+            if [[ $? -eq 0 ]]; then
+              echo "✅ $branch has already been merged into $main_branch — skipping."
+              continue
+            fi
+            
             base=$(git merge-base $main_branch $branch)
             stats=$(git diff --shortstat $base..$branch)
 
